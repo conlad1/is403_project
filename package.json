@@ -1,0 +1,32 @@
+{
+  "name": "is403_project",
+  "version": "1.0.0",
+  "description": "adhd productivity log and analytics application",
+  "homepage": "https://github.com/conlad1/is403_project#readme",
+  "bugs": {
+    "url": "https://github.com/conlad1/is403_project/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/conlad1/is403_project.git"
+  },
+  "license": "ISC",
+  "author": "BYU IS section 1 group 3",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js",
+    "build": "echo \"(optional) compile step\"",
+    "lint": "eslint .",
+    "test": "vitest"
+  },
+  "engines": { "node": ">=22" },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "knex": "^3.1.0",
+    "path": "^0.12.7"
+  }
+}
