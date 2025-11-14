@@ -97,4 +97,4 @@ app.get('/logout', (res, rew) => {
 // app is listening on the specified port
 app.listen(port, () => {
     console.log("The server is listening");
-})
+});
