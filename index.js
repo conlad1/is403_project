@@ -20,7 +20,7 @@ app.use(session({
 
 // connect to the database using env variables.
 let knex = require('knex')({
-    clinet: "pg",
+    client: "pg",
     connection:  {
         host: process.env.DB_HOST || "localhost",
         port: process.env.DB_PORT || 5434,
@@ -52,11 +52,7 @@ app.use((req, res, next) => {
 
 // main route - check if logged in
 app.get('/', (req, res) => {
-    if (req.session.isLoggedIn) {
         res.render('index');
-    } else {
-        res.render('login', { error_message: ''});
-    }
 });
 
 // create session object attributes upon login
@@ -71,7 +67,7 @@ app.post('/login', (req, res) => {
         if(users.length > 0) {
             req.session.isLoggedIn = true;
             req.session.username = username;
-            req.redirect('/userhome');
+            req.redirect('/userhome', { username: username});
         } else {
             // this means no matching user was found
             res.render('login', { error_message: 'Invalid login' });
@@ -79,19 +75,75 @@ app.post('/login', (req, res) => {
     })
     .catch(err => {
         // this means there was a databse or server error
-        console.error("Login errorL: ", err);
+        console.error("Login error: ", err);
         res.render('login', { error_message: 'Invalid Login' });
     });
 });
 
 // logout route to destory the session object
-app.get('/logout', (res, rew) => {
+app.get('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
             console.log(err);
         }
         res.redirect('/');
     })
+});
+
+//new user route
+app.get("/newuser", (req, res) => {
+    if (req.session.isLoggedIn) {
+        res.redirect('/logout');
+    } else {
+        res.render('newuser');
+    }  
+});
+
+// create a new user
+app.post('/newuser', (req, res) => {
+    knex.select("username")
+        .from("users")
+        .where("username", req.body.username)
+        .then(username => {
+            if (username) {
+                res.render('newuser', { error_message: 'Username unavailable: use something else'});
+            } else {
+                knex('users').insert(req.body)
+                .then(users => {
+                    res.redirect('/login', {newUserMessage: 'Please log in with newly created account'});
+                }).catch(err => {
+                    // this means there was a databse or server error
+                    console.error("Login error: ", err);
+                    res.render('login', { error_message: 'Invalid Login' });
+                })
+            }
+        }).catch(err => {
+            // this means there was a databse or server error
+            console.error("Login error: ", err);
+            res.render('login', { error_message: 'Invalid Login' });
+        });
+    
+});
+
+app.get('/userhome', (req, res) => {
+    if (req.session.isLoggedIn) {
+        knex.select()
+            .from("daily_metric_summary")
+            .where("username", req.session.username)
+        .then( metrics => {
+
+        
+        res.render('userhome', {username: req.session.username,
+                                metrics: metrics,
+                                });
+        }).catch(err => {
+            // this means there was a databse or server error
+            console.error("Login error: ", err);
+            res.render('login', { error_message: 'Invalid Login' });
+        });
+    } else {
+        res.redirect('/login', { error_message: "Please log in"});
+    }
 });
 
 // app is listening on the specified port
