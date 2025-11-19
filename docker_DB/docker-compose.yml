@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:18
+    container_name: pg18-adhd
+    restart: always
+    environment:
+      POSTGRES_USER: conlad
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: adhd
+    ports:
+      - "5432:5432"
+    volumes:
+      # use init seed file 
+      - ./init-is403-proj.sql:/docker-entrypoint-initdb.d/init-is403-proj.sql:ro
+      # persistent DB data
+      - pgdata:/var/lib/postgresql/main
+
+volumes: 
+  pgdata:
