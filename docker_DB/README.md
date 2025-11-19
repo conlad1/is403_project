@@ -23,7 +23,7 @@ It should be part of main in the git repo,
 but make sure the new .env DB connection variables looks like this:
 
 DB_HOST=localhost
-DB_PORT=5432
-DB_USER=conlad
+DB_PORT=5435
+DB_USER=postgres
 DB_PASSWORD=admin
 DB_NAME=adhd
