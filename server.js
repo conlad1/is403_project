@@ -11,99 +11,208 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 
-// ----- Mock data (from your React dashboard) -----
-const hourlyData = [
-  { hour: '6 AM', effectiveness: 45, tasks: 2 },
-  { hour: '7 AM', effectiveness: 60, tasks: 3 },
-  { hour: '8 AM', effectiveness: 75, tasks: 5 },
-  { hour: '9 AM', effectiveness: 85, tasks: 7 },
-  { hour: '10 AM', effectiveness: 92, tasks: 8 },
-  { hour: '11 AM', effectiveness: 88, tasks: 7 },
-  { hour: '12 PM', effectiveness: 70, tasks: 4 },
-  { hour: '1 PM', effectiveness: 55, tasks: 3 },
-  { hour: '2 PM', effectiveness: 65, tasks: 5 },
-  { hour: '3 PM', effectiveness: 78, tasks: 6 },
-  { hour: '4 PM', effectiveness: 82, tasks: 7 },
-  { hour: '5 PM', effectiveness: 68, tasks: 4 },
-  { hour: '6 PM', effectiveness: 50, tasks: 2 }
-];
-
-const weeklyData = [
-  { day: 'Mon', effectiveness: 82 },
-  { day: 'Tue', effectiveness: 88 },
-  { day: 'Wed', effectiveness: 85 },
-  { day: 'Thu', effectiveness: 90 },
-  { day: 'Fri', effectiveness: 75 },
-  { day: 'Sat', effectiveness: 60 },
-  { day: 'Sun', effectiveness: 55 }
-];
-
-const stats = [
-  { label: 'Peak Time', value: '10 AM' },
-  { label: 'Avg Effectiveness', value: '78%' },
-  { label: 'Goals Completed', value: '12/15' },
-  { label: 'Productivity Score', value: '92' }
-];
-
-// Simple mock goals
-const initialGoals = [
+// -------- Sample activity data for demo ----------
+const activitiesSeed = [
   {
-    id: '1',
-    title: 'Deep work block',
-    description: '2 hours of distraction-free work each morning',
-    targetDate: '2025-12-31',
-    completed: false,
-    progress: 40
+    date: '2025-12-09',
+    activity: 'Deep work — client project',
+    startTime: '09:00',
+    endTime: '10:30',
+    durationMinutes: 90,
+    effectiveness: 9,
+    distractions: 1
   },
   {
-    id: '2',
-    title: 'Limit social media',
-    description: 'Keep social apps under 30 minutes per day',
-    targetDate: '2025-12-31',
-    completed: true,
-    progress: 100
+    date: '2025-12-09',
+    activity: 'Email + admin',
+    startTime: '10:45',
+    endTime: '11:15',
+    durationMinutes: 30,
+    effectiveness: 6,
+    distractions: 4
+  },
+  {
+    date: '2025-12-09',
+    activity: 'Study session',
+    startTime: '14:00',
+    endTime: '15:15',
+    durationMinutes: 75,
+    effectiveness: 8,
+    distractions: 2
+  },
+  {
+    date: '2025-12-08',
+    activity: 'Morning planning',
+    startTime: '08:30',
+    endTime: '09:00',
+    durationMinutes: 30,
+    effectiveness: 7,
+    distractions: 0
+  },
+  {
+    date: '2025-12-08',
+    activity: 'Scrolling on phone',
+    startTime: '21:00',
+    endTime: '21:45',
+    durationMinutes: 45,
+    effectiveness: 3,
+    distractions: 7
+  },
+  {
+    date: '2025-12-07',
+    activity: 'Homework block',
+    startTime: '19:00',
+    endTime: '20:30',
+    durationMinutes: 90,
+    effectiveness: 8,
+    distractions: 3
+  },
+  {
+    date: '2025-12-07',
+    activity: 'Gaming',
+    startTime: '20:45',
+    endTime: '22:00',
+    durationMinutes: 75,
+    effectiveness: 5,
+    distractions: 5
   }
 ];
 
-// ----- Routes -----
+function buildAnalytics(activities) {
+  const activitiesByDate = {};
+  activities.forEach((a) => {
+    if (!activitiesByDate[a.date]) {
+      activitiesByDate[a.date] = [];
+    }
+    activitiesByDate[a.date].push(a);
+  });
 
-// Redirect root to login
+  function hourLabelFromTime(time) {
+    const parts = time.split(':');
+    const hour24 = parseInt(parts[0], 10);
+    const suffix = hour24 >= 12 ? 'PM' : 'AM';
+    const hour12Raw = hour24 % 12;
+    const hour12 = hour12Raw === 0 ? 12 : hour12Raw;
+    return `${hour12} ${suffix}`;
+  }
+
+  // ---- Hourly effectiveness buckets ----
+  const hourBuckets = {};
+  activities.forEach((a) => {
+    const label = hourLabelFromTime(a.startTime);
+    if (!hourBuckets[label]) {
+      hourBuckets[label] = { totalEff: 0, count: 0 };
+    }
+    hourBuckets[label].totalEff += a.effectiveness;
+    hourBuckets[label].count += 1;
+  });
+
+  const hourOrder = [
+    '6 AM', '7 AM', '8 AM', '9 AM', '10 AM', '11 AM',
+    '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM',
+    '6 PM', '7 PM', '8 PM', '9 PM', '10 PM', '11 PM'
+  ];
+
+  const hourlyData = hourOrder
+    .filter((label) => hourBuckets[label])
+    .map((label) => ({
+      hour: label,
+      effectiveness: Math.round(
+        hourBuckets[label].totalEff / hourBuckets[label].count
+      )
+    }));
+
+  // ---- Weekly effectiveness buckets ----
+  const dayBuckets = {};
+  activities.forEach((a) => {
+    const d = new Date(a.date);
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // Mon, Tue, ...
+    if (!dayBuckets[dayName]) {
+      dayBuckets[dayName] = { totalEff: 0, count: 0 };
+    }
+    dayBuckets[dayName].totalEff += a.effectiveness;
+    dayBuckets[dayName].count += 1;
+  });
+
+  const dayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weeklyData = dayOrder.map((day) => ({
+    day,
+    effectiveness: dayBuckets[day]
+      ? Math.round(dayBuckets[day].totalEff / dayBuckets[day].count)
+      : 0
+  }));
+
+  // ---- Summary stats ----
+  let peakTimeLabel = null;
+  let peakTimeEff = -Infinity;
+  hourlyData.forEach((h) => {
+    if (h.effectiveness > peakTimeEff) {
+      peakTimeEff = h.effectiveness;
+      peakTimeLabel = h.hour;
+    }
+  });
+
+  let peakDayLabel = null;
+  let peakDayEff = -Infinity;
+  weeklyData.forEach((d) => {
+    if (d.effectiveness > peakDayEff) {
+      peakDayEff = d.effectiveness;
+      peakDayLabel = d.day;
+    }
+  });
+
+  let totalEff = 0;
+  let totalDistractions = 0;
+  let count = 0;
+  activities.forEach((a) => {
+    totalEff += a.effectiveness;
+    totalDistractions += a.distractions;
+    count += 1;
+  });
+
+  const summaryStats = {
+    peakTimeLabel: peakTimeLabel || '—',
+    peakDayLabel: peakDayLabel || '—',
+    averageEffectiveness: count ? (totalEff / count).toFixed(1) : '0.0',
+    averageDistractions: count ? (totalDistractions / count).toFixed(1) : '0.0'
+  };
+
+  return { activitiesByDate, hourlyData, weeklyData, summaryStats };
+}
+
+const analytics = buildAnalytics(activitiesSeed);
+
+// -------- Routes --------
+
+// ⬇️ Root goes to login now
 app.get('/', (req, res) => {
   res.redirect('/login');
 });
 
+// Login page
 app.get('/login', (req, res) => {
   res.render('login', { pageTitle: 'Login' });
-});
-
-// Fake login – always success, just redirect
-app.post('/login', (req, res) => {
-  res.redirect('/dashboard');
 });
 
 app.get('/dashboard', (req, res) => {
   res.render('dashboard', {
     pageTitle: 'Dashboard',
-    stats,
-    hourlyData,
-    weeklyData
-  });
-});
-
-app.get('/goals', (req, res) => {
-  res.render('goals', {
-    pageTitle: 'Goals',
-    goals: initialGoals
+    hourlyData: analytics.hourlyData,
+    weeklyData: analytics.weeklyData,
+    summaryStats: analytics.summaryStats
   });
 });
 
 app.get('/log-activity', (req, res) => {
+  const today = new Date().toISOString().slice(0, 10);
   res.render('log-activity', {
-    pageTitle: 'Log Activity'
+    pageTitle: 'Log Activity',
+    today,
+    activitiesByDate: analytics.activitiesByDate
   });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Productivity dashboard running on http://localhost:${PORT}`);
+  console.log('FlowTrack prototype running on http://localhost:' + PORT);
 });
