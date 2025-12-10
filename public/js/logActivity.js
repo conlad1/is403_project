@@ -79,6 +79,9 @@
         'rounded-xl bg-slate-800/80 border border-slate-700 p-4 flex justify-between gap-4 items-start';
       li.dataset.date = date;
       li.dataset.index = String(index);
+      if (a.activitysessionid) {
+        li.dataset.activitysessionid = String(a.activitysessionid);
+      }
 
       li.innerHTML = `
         <div>
@@ -129,6 +132,11 @@
     effectivenessSlider.value = 7;
     effectivenessValue.textContent = '7';
     durationDisplay.textContent = 'Duration: --';
+    // Clear any hidden activitysessionid input
+    const existingIdInput = form.querySelector('input[name="activitysessionid"]');
+    if (existingIdInput) {
+      existingIdInput.remove();
+    }
     renderList();
   });
 
@@ -142,30 +150,58 @@
     const date = li.dataset.date;
     const index = parseInt(li.dataset.index || '0', 10);
     const activities = getActivitiesForDate(date);
+    const activity = activities[index];
+
+    if (!activity || !activity.activitysessionid) return;
 
     if (target.classList.contains('deleteBtn')) {
-      activities.splice(index, 1);
-      if (!activities.length) {
-        delete activitiesByDate[date];
+      if (!confirm('Are you sure you want to delete this activity?')) {
+        return;
       }
-      if (currentDate === date) {
-        renderList();
-      }
+
+      // Delete from server
+      fetch(`/log-activity/${activity.activitysessionid}`, {
+        method: 'DELETE'
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Remove from local data
+            activities.splice(index, 1);
+            if (!activities.length) {
+              delete activitiesByDate[date];
+            }
+            if (currentDate === date) {
+              renderList();
+            }
+          } else {
+            alert('Error deleting activity. Please try again.');
+          }
+        })
+        .catch(err => {
+          console.error('Delete error:', err);
+          alert('Error deleting activity. Please try again.');
+        });
       return;
     }
 
     if (target.classList.contains('editBtn')) {
-      const a = activities[index];
-      activityNameInput.value = a.activity || '';
-      activityDateInput.value = date;
-      startInput.value = a.startTime;
-      endInput.value = a.endTime;
-      effectivenessSlider.value = a.effectiveness;
-      effectivenessValue.textContent = String(a.effectiveness);
-      distractionsInput.value = a.distractions;
+      // Load activity data into form
+      activityNameInput.value = activity.activity || '';
+      activityDateInput.value = activity.date || date;
+      startInput.value = activity.startTime || '';
+      endInput.value = activity.endTime || '';
+      effectivenessSlider.value = activity.effectiveness || 7;
+      effectivenessValue.textContent = String(activity.effectiveness || 7);
+      distractionsInput.value = activity.distractions || 0;
       calculateDuration();
 
-      editing = { date: date, index: index };
+      // Store the activitysessionid for editing
+      editing = { 
+        activitysessionid: activity.activitysessionid,
+        date: activity.date || date, 
+        index: index 
+      };
     }
   });
 
@@ -173,6 +209,11 @@
     e.preventDefault();
 
     const activity = activityNameInput.value.trim();
+    if (!activity) {
+      alert('Please enter an activity name');
+      return;
+    }
+
     const date = activityDateInput.value || currentDate;
     const startTime = startInput.value;
     const endTime = endInput.value;
@@ -182,46 +223,41 @@
     const distractions =
       distractionsValue === '' ? 0 : parseInt(distractionsValue, 10);
 
-    if (!activitiesByDate[date]) {
-      activitiesByDate[date] = [];
+    // Submit to server using URL-encoded format (Express can parse this)
+    const params = new URLSearchParams();
+    params.append('activitydate', date);
+    params.append('starttime', startTime);
+    params.append('endtime', endTime);
+    params.append('durationminutes', durationMinutes);
+    params.append('activitytitle', activity);
+    params.append('effectivenessscore', effectiveness);
+    params.append('distractioncount', distractions);
+    params.append('notes', '');
+
+    // If editing, include the activitysessionid
+    if (editing && editing.activitysessionid) {
+      params.append('activitysessionid', editing.activitysessionid);
     }
 
-    const newRecord = {
-      activity: activity,
-      date: date,
-      startTime: startTime,
-      endTime: endTime,
-      durationMinutes: durationMinutes,
-      effectiveness: effectiveness,
-      distractions: distractions
-    };
-
-    if (editing) {
-      // if date changed, move between days
-      if (editing.date === date) {
-        activitiesByDate[date][editing.index] = newRecord;
-      } else {
-        const prevList = activitiesByDate[editing.date] || [];
-        prevList.splice(editing.index, 1);
-        if (!prevList.length) {
-          delete activitiesByDate[editing.date];
+    fetch('/log-activity', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString()
+    })
+      .then(response => {
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else {
+          // If not redirected, reload the page to show updated data
+          window.location.reload();
         }
-        activitiesByDate[date].push(newRecord);
-      }
-    } else {
-      activitiesByDate[date].push(newRecord);
-    }
-
-    currentDate = date;
-    daySelector.value = currentDate;
-    editing = null;
-
-    form.reset();
-    effectivenessSlider.value = 7;
-    effectivenessValue.textContent = '7';
-    durationDisplay.textContent = 'Duration: --';
-
-    renderList();
+      })
+      .catch(err => {
+        console.error('Error submitting activity:', err);
+        alert('Error saving activity. Please try again.');
+      });
   });
 
   // Initial render

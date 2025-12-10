@@ -1,5 +1,11 @@
 # is403_project
 
+## TA GRADING LOGIN
+go to [is403.is404.net](https://is403.is404.net)
+Login:
+    email: demo.user@example.com
+    password: is403admin
+
 # Roles:
 
 ## Backend
