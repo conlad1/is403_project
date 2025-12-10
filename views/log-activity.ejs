@@ -2,76 +2,230 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title><%= pageTitle %> | Productivity Dashboard</title>
+  <title><%= pageTitle %> | FlowTrack</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Flatpickr (date & time picker) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 </head>
-<body class="bg-gray-50">
-<div class="flex h-screen">
+<body class="bg-slate-950 text-slate-100">
+
+<div class="flex min-h-screen">
+  <!-- Sidebar -->
   <%- include('partials/sidebar', { current: 'log-activity' }) %>
 
-  <main class="flex-1 overflow-y-auto p-8">
-    <header class="mb-6">
-      <h1 class="text-2xl font-semibold text-gray-900 mb-2">Log an Activity</h1>
-      <p class="text-gray-600">
-        Capture when you were focused vs distracted so the dashboard can find your patterns.
+  <!-- Main -->
+  <main class="flex-1 px-8 py-6 overflow-y-auto">
+    <header class="flex flex-col gap-2 mb-6">
+      <h1 class="text-2xl font-semibold tracking-tight text-slate-50">
+        Log your day
+      </h1>
+      <p class="text-sm text-slate-400 max-w-xl">
+        Capture what you worked on, how focused you felt, and how many
+        distractions pulled you away. We’ll use this to surface your peak
+        times on the dashboard.
       </p>
     </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Form -->
-      <section class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">New activity</h2>
+    <section class="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <!-- Log form -->
+      <div class="rounded-2xl bg-slate-900 border border-slate-800 p-6">
+        <h2 class="text-sm font-semibold text-slate-50 mb-4">
+          Log an activity
+        </h2>
+
         <form id="activityForm" class="space-y-4">
+          <!-- Activity name -->
           <div>
-            <label class="block text-sm text-gray-700 mb-1" for="taskName">What were you working on?</label>
-            <input id="taskName" name="task" type="text" required
-              class="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Deep work, email, studying, etc." />
+            <label for="activityName" class="block text-xs font-medium text-slate-300 mb-1">
+              What were you working on?
+            </label>
+            <input
+              id="activityName"
+              name="activityName"
+              type="text"
+              required
+              placeholder="e.g., Deep work — database project"
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
+          <!-- Date -->
+          <div>
+            <label for="activityDate" class="block text-xs font-medium text-slate-300 mb-1">
+              Date
+            </label>
+            <input
+              id="activityDate"
+              name="activityDate"
+              type="text"
+              value="<%= today %>"
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <!-- Time range -->
+          <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <label class="block text-sm text-gray-700 mb-1" for="duration">Duration (minutes)</label>
-              <input id="duration" name="duration" type="number" min="1"
-                class="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="25" />
+              <label for="startTime" class="block text-xs font-medium text-slate-300 mb-1">
+                Time started
+              </label>
+              <input
+                id="startTime"
+                name="startTime"
+                type="text"
+                required
+                class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
             <div>
-              <label class="block text-sm text-gray-700 mb-1" for="effectiveness">Effectiveness (1–10)</label>
-              <input id="effectiveness" name="effectiveness" type="number" min="1" max="10"
-                class="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="8" />
+              <label for="endTime" class="block text-xs font-medium text-slate-300 mb-1">
+                Time ended
+              </label>
+              <input
+                id="endTime"
+                name="endTime"
+                type="text"
+                required
+                class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
           </div>
 
+          <!-- Duration display -->
+          <p id="durationDisplay" class="text-xs text-slate-400">
+            Duration: --
+          </p>
+
+          <!-- Effectiveness slider -->
           <div>
-            <label class="block text-sm text-gray-700 mb-1" for="distractions">Distractions</label>
-            <input id="distractions" name="distractions" type="number" min="0"
-              class="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="3" />
+            <div class="flex items-center justify-between mb-1">
+              <label for="effectiveness" class="block text-xs font-medium text-slate-300">
+                Effectiveness (1–10)
+              </label>
+              <span class="text-xs text-blue-300">
+                <span id="effectivenessValue">7</span>/10
+              </span>
+            </div>
+            <input
+              id="effectiveness"
+              name="effectiveness"
+              type="range"
+              min="1"
+              max="10"
+              value="7"
+              class="w-full"
+            />
           </div>
 
-          <button type="submit"
-            class="w-full inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5
-                   text-sm font-medium text-white hover:bg-indigo-700">
-            Save activity
-          </button>
+          <!-- Distractions -->
+          <div>
+            <label for="distractions" class="block text-xs font-medium text-slate-300 mb-1">
+              How many times were you distracted?
+            </label>
+            <input
+              id="distractions"
+              name="distractions"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="e.g., 3"
+              class="w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <!-- Submit -->
+          <div class="pt-2">
+            <button
+              type="submit"
+              class="inline-flex items-center justify-center rounded-xl bg-blue-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-sm hover:bg-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-950"
+            >
+              Save activity
+            </button>
+          </div>
         </form>
-      </section>
+      </div>
 
-      <!-- Activity list -->
-      <section class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Today’s log</h2>
-        <div id="activitiesEmpty" class="text-sm text-gray-500">
-          No activities logged yet. Start tracking your work!
+      <!-- Daily log -->
+      <div class="rounded-2xl bg-slate-900 border border-slate-800 p-6 flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-sm font-semibold text-slate-50">
+              Daily log
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">
+              Switch days to review, edit, or remove previous activities.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <label for="daySelector" class="text-[11px] uppercase tracking-wide text-slate-500">
+              Viewing day
+            </label>
+            <input
+              id="daySelector"
+              type="text"
+              value="<%= today %>"
+              class="rounded-lg bg-slate-950 border border-slate-700 px-2 py-1 text-xs text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
         </div>
-        <div id="activitiesList" class="space-y-3 hidden"></div>
-      </section>
-    </div>
+
+        <div id="activitiesEmpty" class="flex-1 flex items-center justify-center text-xs text-slate-500 border border-dashed border-slate-700 rounded-xl">
+          No activities logged for this day yet.
+        </div>
+
+        <ul id="activitiesList" class="hidden flex-1 flex-col gap-3 overflow-y-auto pr-1 text-sm">
+          <!-- Populated by JS -->
+        </ul>
+      </div>
+    </section>
   </main>
 </div>
 
+<script>
+  window.ACTIVITY_DATA = {
+    today: '<%= today %>',
+    activitiesByDate: <%- JSON.stringify(activitiesByDate || {}) %>
+  };
+
+  // Initialize Flatpickr for date & time fields
+  document.addEventListener('DOMContentLoaded', function () {
+    // Date pickers (stored as YYYY-MM-DD)
+    flatpickr('#activityDate', {
+      dateFormat: 'Y-m-d',
+      defaultDate: '<%= today %>',
+      allowInput: true
+    });
+
+    flatpickr('#daySelector', {
+      dateFormat: 'Y-m-d',
+      defaultDate: '<%= today %>',
+      allowInput: true
+    });
+
+    // Time pickers (stored as HH:MM 24hr -> matches existing JS)
+    flatpickr('#startTime', {
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: 'H:i',
+      time_24hr: true,
+      allowInput: true
+    });
+
+    flatpickr('#endTime', {
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: 'H:i',
+      time_24hr: true,
+      allowInput: true
+    });
+  });
+</script>
+
 <script src="/js/logActivity.js"></script>
+
 </body>
 </html>
