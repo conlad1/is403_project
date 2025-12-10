@@ -15,8 +15,8 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "dev": "node --watch server.js",
-    "start": "node server.js",
+    "dev": "node --watch index.js",
+    "start": "node index.js",
     "build": "echo \"(optional) compile step\"",
     "lint": "eslint .",
     "test": "vitest"
