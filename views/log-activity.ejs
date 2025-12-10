@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title><%= pageTitle %> | Productivity Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+<div class="flex h-screen">
+  <%- include('partials/sidebar', { current: 'log-activity' }) %>
+
+  <main class="flex-1 overflow-y-auto p-8">
+    <header class="mb-6">
+      <h1 class="text-2xl font-semibold text-gray-900 mb-2">Log an Activity</h1>
+      <p class="text-gray-600">
+        Capture when you were focused vs distracted so the dashboard can find your patterns.
+      </p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Form -->
+      <section class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">New activity</h2>
+        <form id="activityForm" class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-700 mb-1" for="taskName">What were you working on?</label>
+            <input id="taskName" name="task" type="text" required
+              class="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="Deep work, email, studying, etc." />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-700 mb-1" for="duration">Duration (minutes)</label>
+              <input id="duration" name="duration" type="number" min="1"
+                class="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="25" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-700 mb-1" for="effectiveness">Effectiveness (1–10)</label>
+              <input id="effectiveness" name="effectiveness" type="number" min="1" max="10"
+                class="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="8" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm text-gray-700 mb-1" for="distractions">Distractions</label>
+            <input id="distractions" name="distractions" type="number" min="0"
+              class="w-full rounded-lg border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="3" />
+          </div>
+
+          <button type="submit"
+            class="w-full inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5
+                   text-sm font-medium text-white hover:bg-indigo-700">
+            Save activity
+          </button>
+        </form>
+      </section>
+
+      <!-- Activity list -->
+      <section class="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Today’s log</h2>
+        <div id="activitiesEmpty" class="text-sm text-gray-500">
+          No activities logged yet. Start tracking your work!
+        </div>
+        <div id="activitiesList" class="space-y-3 hidden"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="/js/logActivity.js"></script>
+</body>
+</html>

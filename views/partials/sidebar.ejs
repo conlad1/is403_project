@@ -1,0 +1,22 @@
+<div class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200">
+  <div class="h-16 flex items-center px-6 border-b border-gray-100">
+    <span class="text-xl font-semibold text-gray-900">FlowTrack</span>
+  </div>
+  <nav class="flex-1 px-3 py-4 space-y-1">
+    <a href="/dashboard"
+       class="flex items-center px-3 py-2 rounded-lg text-sm font-medium
+       <%= (current === 'dashboard' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:bg-gray-50') %>">
+      <span>Dashboard</span>
+    </a>
+    <a href="/goals"
+       class="flex items-center px-3 py-2 rounded-lg text-sm font-medium
+       <%= (current === 'goals' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:bg-gray-50') %>">
+      <span>Goals</span>
+    </a>
+    <a href="/log-activity"
+       class="flex items-center px-3 py-2 rounded-lg text-sm font-medium
+       <%= (current === 'log-activity' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:bg-gray-50') %>">
+      <span>Log Activity</span>
+    </a>
+  </nav>
+</div>
